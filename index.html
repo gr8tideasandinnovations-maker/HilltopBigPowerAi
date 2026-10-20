@@ -55,5 +55,42 @@ Email: boboye@hilltopbigpower.ai`),className:"h-11 px-6 rounded-full bg-white te
 </script>
   <script>(function(){function m(a){var h=a.getAttribute("href");if(!h)return;try{var u=new URL(h,document.baseURI);if((u.protocol==="http:"||u.protocol==="https:")&&u.host!==location.host){a.target="_blank";a.rel="noopener noreferrer";}}catch(e){}}function s(){document.querySelectorAll("a[href]").forEach(m);}if(document.readyState!=="loading"){s();}else{document.addEventListener("DOMContentLoaded",s);}document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[href]");if(a){m(a);}},true);})();</script>
   <script type="application/json" data-clippy-inline-media-manifest="1">{"version":1,"slots":[]}</script>
+<script>
+  // 1. Wait for the React app to load
+  setTimeout(() => {
+    const originalFetch = window.fetch;
+    
+    // 2. Intercept any network request the chat app tries to make
+    window.fetch = async (...args) => {
+      const [url, options] = args;
+      
+      // If the app is trying to send a chat message to a mock URL
+      if (url.includes('/api/chat') || url.includes('/mock')) {
+        const body = JSON.parse(options.body);
+        const userMessage = body.message || body.text;
+
+        // 3. Call the REAL Gemini API instead
+        const geminiRes = await originalFetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%GEMINI_API_KEY%`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userMessage }] }]
+          })
+        });
+
+        const data = await geminiRes.json();
+        const reply = data.candidates[0].content.parts[0].text;
+
+        // 4. Return the real AI reply to the React app
+        return new Response(JSON.stringify({ reply: reply, message: reply }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      }
+
+      // For any other request, just let it happen normally
+      return originalFetch(...args);
+    };
+  }, 2000); // Wait 2 seconds for React to load
 </body>
 </html>
