@@ -55,6 +55,86 @@ Email: boboye@hilltopbigpower.ai`),className:"h-11 px-6 rounded-full bg-white te
 </script>
   <script>(function(){function m(a){var h=a.getAttribute("href");if(!h)return;try{var u=new URL(h,document.baseURI);if((u.protocol==="http:"||u.protocol==="https:")&&u.host!==location.host){a.target="_blank";a.rel="noopener noreferrer";}}catch(e){}}function s(){document.querySelectorAll("a[href]").forEach(m);}if(document.readyState!=="loading"){s();}else{document.addEventListener("DOMContentLoaded",s);}document.addEventListener("click",function(e){var a=e.target&&e.target.closest&&e.target.closest("a[href]");if(a){m(a);}},true);})();</script>
   <script type="application/json" data-clippy-inline-media-manifest="1">{"version":1,"slots":[]}</script>
+<script>
+  // Wait for the page to fully load
+  window.addEventListener('load', () => {
+    // Check every half second for the chat elements to appear
+    setInterval(() => {
+      // 1. Find the input box using the exact placeholder text
+      const inputElement = document.querySelector('input[placeholder="Type a message"]');
+      
+      // 2. Find the send button (it's the purple circle with the paper plane SVG)
+      // We look for a div or button that contains an svg and is near the input
+      const sendButton = inputElement ? inputElement.parentElement.querySelector('button, div[class*="bg-[#8b5cf6]"], div[class*="bg-[#a855f7]"]') : null;
 
+      if (inputElement && sendButton && !inputElement.dataset.aiAttached) {
+        
+        // Mark it so we don't attach multiple times
+        inputElement.dataset.aiAttached = 'true';
+        console.log("Chat elements found! Attaching AI...");
+
+        // Create a function to send to Gemini
+        const sendToGemini = async () => {
+          const userText = inputElement.value;
+          if (!userText) return;
+
+          // Clear input
+          inputElement.value = '';
+
+          // Find the scrollable chat container (going up a few levels)
+          const chatContainer = inputElement.closest('.overflow-y-auto') || inputElement.parentElement.parentElement;
+
+          // Add user message to the screen visually
+          chatContainer.innerHTML += `<div style="text-align: right; margin: 10px; color: #a855f7;">${userText}</div>`;
+          
+          // Scroll to bottom
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+
+          // Show loading
+          const loading = document.createElement('div');
+          loading.innerText = "Hilltop AI is thinking...";
+          loading.style.color = "gray";
+          loading.style.margin = "10px";
+          chatContainer.appendChild(loading);
+          chatContainer.scrollTop = chatContainer.scrollHeight;
+
+          try {
+            // Fetch from Gemini
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=%GEMINI_API_KEY%`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ contents: [{ parts: [{ text: `You are Hilltop AI, a helpful assistant. Reply to: ${userText}` }] }] })
+            });
+            const data = await res.json();
+            
+            loading.remove();
+            
+            // Add AI reply
+            chatContainer.innerHTML += `<div style="text-align: left; margin: 10px; color: #22c55e;">Hilltop AI: ${data.candidates[0].content.parts[0].text}</div>`;
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+          } catch (err) {
+            loading.innerText = "Error connecting to AI.";
+            loading.style.color = "red";
+          }
+        };
+
+        // Attach to the Paper Plane button click
+        sendButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          sendToGemini();
+        });
+
+        // Attach to the Enter key on the keyboard
+        inputElement.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            sendToGemini();
+          }
+        });
+      }
+    }, 500); // check every 0.5 seconds
+  });
+              </script>
   </body>
   </html>
