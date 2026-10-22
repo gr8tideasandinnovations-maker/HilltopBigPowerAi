@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hilltop AI Chat</title>
+    <style>
+        body { font-family: sans-serif; background: #111827; color: white; margin: 0; padding: 20px; display: flex; flex-direction: column; height: 100vh; box-sizing: border-box; }
+        #chat-box { flex: 1; overflow-y: auto; border: 1px solid #374151; border-radius: 10px; padding: 10px; margin-bottom: 20px; background: #1f2937; }
+        .message { margin: 10px 0; padding: 10px; border-radius: 8px; max-width: 80%; line-height: 1.4; }
+        .user { background: #8b5cf6; align-self: flex-end; margin-left: auto; text-align: right; }
+        .ai { background: #374151; align-self: flex-start; }
+        .input-area { display: flex; gap: 10px; }
+        input { flex: 1; padding: 15px; border-radius: 8px; border: 1px solid #374151; background: #1f2937; color: white; outline: none; }
+        button { padding: 15px 20px; border-radius: 8px; border: none; background: #22c55e; color: white; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h2 style="text-align: center; color: #a855f7;">Hilltop AI</h2>
+    <div id="chat-box">
+        <div class="message ai">Hello! I am Hilltop AI. How can I help your business today?</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="user-input" placeholder="Type a message..." onkeypress="handleEnter(event)">
+        <button onclick="sendMessage()">Send</button>
+    </div>
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        function handleEnter(e) { if (e.key === 'Enter') sendMessage(); }
+        async function sendMessage() {
+            const text = userInput.value;
+            if (!text) return;
+            chatBox.innerHTML += `<div class="message user">${text}</div>`;
+            userInput.value = '';
+            chatBox.scrollTop = chatBox.scrollHeight;
+            const loadingId = 'loading-' + Date.now();
+            chatBox.innerHTML += `<div id="${loadingId}" class="message ai">Typing...</div>`;
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await response.json();
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `<div class="message ai">${data.reply}</div>`;
+                chatBox.scrollTop = chatBox.scrollHeight;
+            } catch (error) {
+                document.getElementById(loadingId).innerText = "Error connecting to AI.";
+            }
+        }
+    </script>
+</body>
+  </html>
